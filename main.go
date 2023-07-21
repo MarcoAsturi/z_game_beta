@@ -44,11 +44,18 @@ type Character struct {
 	Name     string
 	Health   int
 	Position Position
+	Weapon   Weapon
 }
 
 type Position struct {
 	X int
 	Y int
+}
+
+type Weapon struct {
+	Name   string
+	Damage int
+	Range  int
 }
 
 var (
@@ -89,13 +96,18 @@ func main() {
 		// Controlla gli scontri
 		checkCollisions()
 
-		time.Sleep(time.Second) // Pausa di 1 secondo tra ogni iterazione
+		time.Sleep(time.Second / 2) // Pausa di 1/2 secondo tra ogni iterazione
 	}
 }
 
 func createCharacter(name string, health int) Character {
 	position := getRandomPosition()
-	return Character{Name: name, Health: health, Position: position}
+	weapon := Weapon{
+		Name:   "Sword",
+		Damage: 20,
+		Range:  0,
+	}
+	return Character{Name: name, Health: health, Position: position, Weapon: weapon}
 }
 
 func createZombie(name string, health int) Zombie {
@@ -208,6 +220,7 @@ func checkCollisions() {
 		for zombieIndex, zombie := range zombies {
 			if character.Position.X == zombie.Position.X && character.Position.Y == zombie.Position.Y {
 				fmt.Printf("%s e %s si sono scontrati nella stessa posizione!\n", character.Name, zombie.Name)
+				time.Sleep(time.Second / 2)
 				fight(characterIndex, zombieIndex)
 			}
 		}
@@ -219,7 +232,8 @@ func fight(characterIndex, zombieIndex int) {
 	zombie := &zombies[zombieIndex]
 
 	fmt.Printf("%s attacca lo zombie %s!\n", character.Name, zombie.Name)
-	damage := rand.Intn(20)
+	time.Sleep(time.Second / 2)
+	damage := rand.Intn(20) + character.Weapon.Damage
 	zombie.Health -= damage
 	fmt.Printf("%d danni!\n", damage)
 
@@ -240,6 +254,7 @@ func fight(characterIndex, zombieIndex int) {
 			removeCharacter(characterIndex)
 		}
 	}
+	time.Sleep(time.Second / 2)
 }
 
 func removeZombie(index int) {
