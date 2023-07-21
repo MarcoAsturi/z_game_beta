@@ -84,7 +84,7 @@ func main() {
 		moveCharacter(&characters[0], direction)
 
 		// Movimento casuale degli zombie
-		moveZombies(characters)
+		moveZombies()
 
 		// Controlla gli scontri
 		checkCollisions()
@@ -145,31 +145,16 @@ func moveCharacterTo(character *Character, x, y int) {
 	}
 }
 
-func moveZombies(Characters []Character) {
+func moveZombies() {
 	for i := range zombies {
-		direction := getRandomDirection()
-		newX := zombies[i].Position.X + direction.X
-		newY := zombies[i].Position.Y + direction.Y
-
-		if isValidPosition(newX, newY) {
-			zombies[i].Position.X = newX
-			zombies[i].Position.Y = newY
-		} else {
-			closestCharacter := getClosestCharacter(&zombies[i], characters)
-			if closestCharacter != nil {
-				// calcolo direzione verso il personaggio
-				dirX := closestCharacter.Position.X - zombies[i].Position.X
-				dirY := closestCharacter.Position.Y - zombies[i].Position.Y
-				// normalizzo la direzione per avere solo un passo alla volta
-				if dirX != 0 {
-					dirX /= int(math.Abs(float64(dirX)))
-				}
-				if dirY != 0 {
-					dirY /= int(math.Abs(float64(dirY)))
-				}
-
-				newX := zombies[i].Position.X + dirX
-				newY := zombies[i].Position.Y + dirY
+		if !isZombieStuck(&zombies[i]) {
+			if isCharacterAdjacentToZombie(&zombies[i], &characters[0]) {
+				zombies[i].Position.X = characters[0].Position.X
+				zombies[i].Position.Y = characters[0].Position.Y
+			} else {
+				direction := getRandomDirection()
+				newX := zombies[i].Position.X + direction.X
+				newY := zombies[i].Position.Y + direction.Y
 
 				if isValidPosition(newX, newY) {
 					zombies[i].Position.X = newX
@@ -180,10 +165,19 @@ func moveZombies(Characters []Character) {
 	}
 }
 
-// func isCharacterAdjacent(zombie *Zombie, character *Character) bool {
-// 	return (zombie.Position.X == character.Position.X && math.Abs(float64(zombie.Position.Y-character.Position.Y)) == 1) ||
-// 		(zombie.Position.Y == character.Position.Y && math.Abs(float64(zombie.Position.X-character.Position.X)) == 1)
-// }
+func isZombieStuck(zombie *Zombie) bool {
+	for _, character := range characters {
+		if isCharacterAdjacentToZombie(zombie, &character) {
+			return character.Position.X == zombie.Position.X && character.Position.Y == zombie.Position.Y
+		}
+	}
+	return false
+}
+
+func isCharacterAdjacentToZombie(zombie *Zombie, character *Character) bool {
+	return (zombie.Position.X == character.Position.X && math.Abs(float64(zombie.Position.Y-character.Position.Y)) == 1) ||
+		(zombie.Position.Y == character.Position.Y && math.Abs(float64(zombie.Position.X-character.Position.X)) == 1)
+}
 
 func getClosestCharacter(zombie *Zombie, characters []Character) *Character {
 	var closestDistance float64 = -1
