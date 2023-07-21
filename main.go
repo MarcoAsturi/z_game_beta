@@ -219,6 +219,7 @@ func checkCollisions() {
 	for characterIndex, character := range characters {
 		for zombieIndex, zombie := range zombies {
 			if character.Position.X == zombie.Position.X && character.Position.Y == zombie.Position.Y {
+				printMap()
 				fmt.Printf("%s e %s si sono scontrati nella stessa posizione!\n", character.Name, zombie.Name)
 				time.Sleep(time.Second / 2)
 				fight(characterIndex, zombieIndex)
@@ -319,6 +320,30 @@ func printGameState() {
 
 	if isGameOver() {
 		fmt.Println("Tutti gli zombie sono stati sconfitti!")
+	}
+}
+
+func printMap() {
+	for i := 0; i < MapWidth; i++ {
+		for j := 0; j < MapHeight; j++ {
+			if mappa[i][j] {
+				fmt.Print("X ")
+			} else {
+				hasCharacter := hasCharacterAtPosition(i, j)
+				hasZombie := hasZombieAtPosition(i, j)
+
+				if hasCharacter && hasZombie {
+					fmt.Print("cz ")
+				} else if hasCharacter {
+					fmt.Print("c ")
+				} else if hasZombie {
+					fmt.Print("z ")
+				} else {
+					fmt.Print(". ")
+				}
+			}
+		}
+		fmt.Println()
 	}
 }
 
