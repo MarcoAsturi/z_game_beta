@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"strings"
 	"time"
@@ -11,8 +12,8 @@ import (
 )
 
 const (
-	MapWidth  = 4
-	MapHeight = 4
+	MapWidth  = 7
+	MapHeight = 7
 )
 
 func createMap() [][]bool {
@@ -153,8 +154,34 @@ func moveZombies() {
 		if isValidPosition(newX, newY) {
 			zombies[i].Position.X = newX
 			zombies[i].Position.Y = newY
+		} else {
+			closestCharacter := getClosestCharacter(&zombies[i])
+			if closestCharacter != nil {
+				zombies[i].Position.X = closestCharacter.Position.X
+				zombies[i].Position.Y = closestCharacter.Position.Y
+			}
 		}
 	}
+}
+
+// func isCharacterAdjacent(zombie *Zombie, character *Character) bool {
+// 	return (zombie.Position.X == character.Position.X && math.Abs(float64(zombie.Position.Y-character.Position.Y)) == 1) ||
+// 		(zombie.Position.Y == character.Position.Y && math.Abs(float64(zombie.Position.X-character.Position.X)) == 1)
+// }
+
+func getClosestCharacter(zombie *Zombie) *Character {
+	var closestDistance float64 = -1
+	var closestChar *Character
+
+	for i := range characters {
+		distance := math.Abs(float64(zombie.Position.X-characters[i].Position.X)) +
+			math.Abs(float64(zombie.Position.Y-characters[i].Position.Y))
+		if closestDistance == -1 || distance < closestDistance {
+			closestDistance = distance
+			closestChar = &characters[i]
+		}
+	}
+	return closestChar
 }
 
 func getRandomDirection() Position {
