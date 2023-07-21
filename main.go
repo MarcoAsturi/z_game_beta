@@ -84,7 +84,7 @@ func main() {
 		moveCharacter(&characters[0], direction)
 
 		// Movimento casuale degli zombie
-		moveZombies()
+		moveZombies(characters)
 
 		// Controlla gli scontri
 		checkCollisions()
@@ -145,7 +145,7 @@ func moveCharacterTo(character *Character, x, y int) {
 	}
 }
 
-func moveZombies() {
+func moveZombies(Characters []Character) {
 	for i := range zombies {
 		direction := getRandomDirection()
 		newX := zombies[i].Position.X + direction.X
@@ -155,10 +155,26 @@ func moveZombies() {
 			zombies[i].Position.X = newX
 			zombies[i].Position.Y = newY
 		} else {
-			closestCharacter := getClosestCharacter(&zombies[i])
+			closestCharacter := getClosestCharacter(&zombies[i], characters)
 			if closestCharacter != nil {
-				zombies[i].Position.X = closestCharacter.Position.X
-				zombies[i].Position.Y = closestCharacter.Position.Y
+				// calcolo direzione verso il personaggio
+				dirX := closestCharacter.Position.X - zombies[i].Position.X
+				dirY := closestCharacter.Position.Y - zombies[i].Position.Y
+				// normalizzo la direzione per avere solo un passo alla volta
+				if dirX != 0 {
+					dirX /= int(math.Abs(float64(dirX)))
+				}
+				if dirY != 0 {
+					dirY /= int(math.Abs(float64(dirY)))
+				}
+
+				newX := zombies[i].Position.X + dirX
+				newY := zombies[i].Position.Y + dirY
+
+				if isValidPosition(newX, newY) {
+					zombies[i].Position.X = newX
+					zombies[i].Position.Y = newY
+				}
 			}
 		}
 	}
@@ -169,7 +185,7 @@ func moveZombies() {
 // 		(zombie.Position.Y == character.Position.Y && math.Abs(float64(zombie.Position.X-character.Position.X)) == 1)
 // }
 
-func getClosestCharacter(zombie *Zombie) *Character {
+func getClosestCharacter(zombie *Zombie, characters []Character) *Character {
 	var closestDistance float64 = -1
 	var closestChar *Character
 
