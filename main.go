@@ -3,13 +3,35 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
+
+	"bufio"
+	"os"
 )
 
 const (
 	MapWidth  = 4
 	MapHeight = 4
 )
+
+func createMap() [][]bool {
+	mappa := make([][]bool, MapWidth)
+	for i := range mappa {
+		mappa[i] = make([]bool, MapHeight)
+	}
+
+	// Generazione casuale degli ostacoli nella mappa
+	for i := 0; i < MapWidth; i++ {
+		for j := 0; j < MapHeight; j++ {
+			if rand.Intn(30) == 0 {
+				mappa[i][j] = true
+			}
+		}
+	}
+
+	return mappa
+}
 
 type Zombie struct {
 	Name     string
@@ -42,39 +64,32 @@ func main() {
 
 	// Creazione dei personaggi
 	characters = append(characters, createCharacter("Sylas", 100))
-	characters = append(characters, createCharacter("Elena", 80))
+	// characters = append(characters, createCharacter("Elena", 80))
 
 	// Creazione degli zombie
 	zombies = append(zombies, createZombie("Walker", 10))
 	zombies = append(zombies, createZombie("Runner", 15))
 
 	// Simulazione del gioco
+	scanner := bufio.NewScanner(os.Stdin)
 	for !isGameOver() {
-		moveCharacters()
-		moveZombies()
-		checkCollisions()
+		// Stampa lo stato del gioco
 		printGameState()
+
+		// Leggi l'input dell'utente per il movimento del personaggio
+		fmt.Print("Inserisci la direzione del movimento (WASD): ")
+		scanner.Scan()
+		direction := scanner.Text()
+		moveCharacter(&characters[0], direction)
+
+		// Movimento casuale degli zombie
+		moveZombies()
+
+		// Controlla gli scontri
+		checkCollisions()
 
 		time.Sleep(time.Second) // Pausa di 1 secondo tra ogni iterazione
 	}
-}
-
-func createMap() [][]bool {
-	mappa := make([][]bool, MapWidth)
-	for i := range mappa {
-		mappa[i] = make([]bool, MapHeight)
-	}
-
-	// Generazione casuale degli ostacoli nella mappa
-	for i := 0; i < MapWidth; i++ {
-		for j := 0; j < MapHeight; j++ {
-			if rand.Intn(6) == 0 {
-				mappa[i][j] = true
-			}
-		}
-	}
-
-	return mappa
 }
 
 func createCharacter(name string, health int) Character {
@@ -94,16 +109,38 @@ func getRandomPosition() Position {
 	}
 }
 
-func moveCharacters() {
-	for i := range characters {
-		direction := getRandomDirection()
-		newX := characters[i].Position.X + direction.X
-		newY := characters[i].Position.Y + direction.Y
+// func moveCharacter() {
+// 	for i := range characters {
+// 		direction := getRandomDirection()
+// 		newX := characters[i].Position.X + direction.X
+// 		newY := characters[i].Position.Y + direction.Y
 
-		if isValidPosition(newX, newY) {
-			characters[i].Position.X = newX
-			characters[i].Position.Y = newY
-		}
+// 		if isValidPosition(newX, newY) {
+// 			characters[i].Position.X = newX
+// 			characters[i].Position.Y = newY
+// 		}
+// 	}
+// }
+
+func moveCharacter(character *Character, direction string) {
+	switch strings.ToLower(direction) {
+	case "w":
+		moveCharacterTo(character, character.Position.X-1, character.Position.Y)
+	case "a":
+		moveCharacterTo(character, character.Position.X, character.Position.Y-1)
+	case "s":
+		moveCharacterTo(character, character.Position.X+1, character.Position.Y)
+	case "d":
+		moveCharacterTo(character, character.Position.X, character.Position.Y+1)
+	default:
+		fmt.Println("Movimento non valido.")
+	}
+}
+
+func moveCharacterTo(character *Character, x, y int) {
+	if isValidPosition(x, y) {
+		character.Position.X = x
+		character.Position.Y = y
 	}
 }
 
