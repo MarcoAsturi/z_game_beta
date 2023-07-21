@@ -72,7 +72,7 @@ func main() {
 
 	// Creazione dei personaggi
 	characters = append(characters, createCharacter("Sylas", 100))
-	// characters = append(characters, createCharacter("Elena", 80))
+	characters = append(characters, createCharacter("Elsa", 80))
 
 	// Creazione degli zombie
 	zombies = append(zombies, createZombie("Walker", 10))
@@ -80,15 +80,26 @@ func main() {
 
 	// Simulazione del gioco
 	scanner := bufio.NewScanner(os.Stdin)
+
 	for !isGameOver() {
 		// Stampa lo stato del gioco
 		printGameState()
 
-		// Leggi l'input dell'utente per il movimento del personaggio
-		fmt.Print("Inserisci la direzione del movimento (WASD): ")
-		scanner.Scan()
-		direction := scanner.Text()
-		moveCharacter(&characters[0], direction)
+		// Movimento dei personaggi
+		for i := 0; i < len(characters); i++ {
+			currentCharacter := &characters[i]
+
+			// Stampiamo il messaggio per il personaggio corrente
+			fmt.Printf("%s, fai la tua mossa\n", currentCharacter.Name)
+
+			// Leggi l'input dell'utente per il movimento del personaggio
+			fmt.Print("Inserisci la direzione del movimento (WASD): ")
+			scanner.Scan()
+			direction := scanner.Text()
+
+			// Fai muovere il personaggio corrente
+			moveCharacter(i, direction)
+		}
 
 		// Movimento casuale degli zombie
 		moveZombies()
@@ -135,16 +146,18 @@ func getRandomPosition() Position {
 // 	}
 // }
 
-func moveCharacter(character *Character, direction string) {
+func moveCharacter(characterIndex int, direction string) {
+	currentCharacter := &characters[characterIndex]
+
 	switch strings.ToLower(direction) {
 	case "w":
-		moveCharacterTo(character, character.Position.X-1, character.Position.Y)
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X-1, currentCharacter.Position.Y)
 	case "a":
-		moveCharacterTo(character, character.Position.X, character.Position.Y-1)
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y-1)
 	case "s":
-		moveCharacterTo(character, character.Position.X+1, character.Position.Y)
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X+1, currentCharacter.Position.Y)
 	case "d":
-		moveCharacterTo(character, character.Position.X, character.Position.Y+1)
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y+1)
 	default:
 		fmt.Println("Movimento non valido.")
 	}
