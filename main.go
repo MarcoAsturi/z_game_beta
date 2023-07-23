@@ -172,31 +172,57 @@ func moveCharacterTo(character *Character, x, y int) {
 
 func moveZombies() {
 	for i := range zombies {
-		if !isZombieStuck(&zombies[i]) {
-			if isCharacterAdjacentToZombie(&zombies[i], &characters[0]) {
-				zombies[i].Position.X = characters[0].Position.X
-				zombies[i].Position.Y = characters[0].Position.Y
-			} else {
-				direction := getRandomDirection()
-				newX := zombies[i].Position.X + direction.X
-				newY := zombies[i].Position.Y + direction.Y
+		// Controlla la situazione del singolo zombie
+		currentZombie := &zombies[i]
 
-				if isValidPosition(newX, newY) {
-					zombies[i].Position.X = newX
-					zombies[i].Position.Y = newY
-				}
+		// Trova personaggio più vicino
+		closestCharacter := getClosestCharacter(currentZombie)
+
+		// Caso 1: Lo zombie si trova nella stessa zona di un personaggio, resta fermo
+		if closestCharacter != nil && isCharacterInSameZoneAsZombie(currentZombie, closestCharacter) {
+			continue
+		}
+
+		// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
+		if closestCharacter != nil && isCharacterAdjacentToZombie(currentZombie, closestCharacter) {
+			moveZombieTowardsCharacter(currentZombie, closestCharacter)
+		} else {
+			// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
+			direction := getRandomDirection()
+			newX := currentZombie.Position.X + direction.X
+			newY := currentZombie.Position.Y + direction.Y
+
+			if isValidPosition(newX, newY) {
+				currentZombie.Position.X = newX
+				currentZombie.Position.Y = newY
 			}
 		}
 	}
 }
 
-func isZombieStuck(zombie *Zombie) bool {
+func isCharacterInSameZoneAsZombie(zombie *Zombie, character *Character) bool {
+	return (zombie.Position.X/3 == character.Position.X/3) && (zombie.Position.Y/3 == character.Position.Y/3)
+}
+
+func isCharacterAtPosition(x, y int) bool {
 	for _, character := range characters {
-		if isCharacterAdjacentToZombie(zombie, &character) {
-			return character.Position.X == zombie.Position.X && character.Position.Y == zombie.Position.Y
+		if character.Position.X == x && character.Position.Y == y {
+			return true
 		}
 	}
 	return false
+}
+
+func moveZombieTowardsCharacter(zombie *Zombie, character *Character) {
+	deltaX := character.Position.X - zombie.Position.X
+	deltaY := character.Position.Y - zombie.Position.Y
+
+	if deltaX != 0 {
+		zombie.Position.X += deltaX / int(math.Abs(float64(deltaX)))
+	}
+	if deltaY != 0 {
+		zombie.Position.Y += deltaY / int(math.Abs(float64(deltaY)))
+	}
 }
 
 func isCharacterAdjacentToZombie(zombie *Zombie, character *Character) bool {
@@ -204,7 +230,7 @@ func isCharacterAdjacentToZombie(zombie *Zombie, character *Character) bool {
 		(zombie.Position.Y == character.Position.Y && math.Abs(float64(zombie.Position.X-character.Position.X)) == 1)
 }
 
-func getClosestCharacter(zombie *Zombie, characters []Character) *Character {
+func getClosestCharacter(zombie *Zombie) *Character {
 	var closestDistance float64 = -1
 	var closestChar *Character
 
