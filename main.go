@@ -130,11 +130,16 @@ func moveZombieConcurrently(zombie *Zombie, wg *sync.WaitGroup) {
 	// Caso 1: Lo zombie si trova nella stessa zona di un personaggio, resta fermo
 	if closestCharacter != nil && isCharacterInSameZoneAsZombie(zombie, closestCharacter) {
 		return
-	}
+	} else if closestCharacter != nil && isCharacterAdjacentToZombie(zombie, closestCharacter) {
+		// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
+		newX := closestCharacter.Position.X
+		newY := closestCharacter.Position.Y
 
-	// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
-	if closestCharacter != nil && isCharacterAdjacentToZombie(zombie, closestCharacter) {
-		moveZombieTowardsCharacter(zombie, closestCharacter)
+		if isValidPosition(newX, newY) {
+			zombie.Position.X = newX
+			zombie.Position.Y = newY
+		}
+		return
 	} else {
 		// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
 		direction := getRandomDirection()
