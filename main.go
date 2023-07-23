@@ -5,10 +5,8 @@ import (
 	"math"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
-
-	"bufio"
-	"os"
 )
 
 const (
@@ -52,6 +50,11 @@ type Position struct {
 	Y int
 }
 
+type ZombiePosition struct {
+	Position    // Includi i campi X e Y della struct Position
+	ZombieIndex int
+}
+
 type Weapon struct {
 	Name   string
 	Damage int
@@ -78,9 +81,10 @@ func main() {
 	zombies = append(zombies, createZombie("Walker", 10))
 	zombies = append(zombies, createZombie("Runner", 15))
 
-	// Simulazione del gioco
-	scanner := bufio.NewScanner(os.Stdin)
+	// WaitGroup per sincronizzare il completamento del movimento degli zombie
+	var wg sync.WaitGroup
 
+	// Simulazione del gioco
 	for !isGameOver() {
 		// Stampa lo stato del gioco
 		printGameState()
@@ -94,15 +98,21 @@ func main() {
 
 			// Leggi l'input dell'utente per il movimento del personaggio
 			fmt.Print("Inserisci la direzione del movimento (WASD): ")
-			scanner.Scan()
-			direction := scanner.Text()
+			var direction string
+			fmt.Scan(&direction)
 
 			// Fai muovere il personaggio corrente
 			moveCharacter(i, direction)
 		}
 
-		// Movimento casuale degli zombie
-		moveZombies()
+		// Movimento degli zombie in modo concorrente
+		for i := range zombies {
+			wg.Add(1)
+			go moveZombieConcurrently(&zombies[i], &wg)
+		}
+
+		// Aspetta che tutti gli zombie abbiano completato il movimento
+		wg.Wait()
 
 		// Controlla gli scontri
 		checkCollisions()
@@ -111,91 +121,29 @@ func main() {
 	}
 }
 
-func createCharacter(name string, health int) Character {
-	position := getRandomPosition()
-	weapon := Weapon{
-		Name:   "Sword",
-		Damage: 20,
-		Range:  0,
+func moveZombieConcurrently(zombie *Zombie, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// Trova personaggio più vicino
+	closestCharacter := getClosestCharacter(zombie)
+
+	// Caso 1: Lo zombie si trova nella stessa zona di un personaggio, resta fermo
+	if closestCharacter != nil && isCharacterInSameZoneAsZombie(zombie, closestCharacter) {
+		return
 	}
-	return Character{Name: name, Health: health, Position: position, Weapon: weapon}
-}
 
-func createZombie(name string, health int) Zombie {
-	position := getRandomPosition()
-	return Zombie{Name: name, Health: health, Position: position}
-}
+	// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
+	if closestCharacter != nil && isCharacterAdjacentToZombie(zombie, closestCharacter) {
+		moveZombieTowardsCharacter(zombie, closestCharacter)
+	} else {
+		// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
+		direction := getRandomDirection()
+		newX := zombie.Position.X + direction.X
+		newY := zombie.Position.Y + direction.Y
 
-func getRandomPosition() Position {
-	return Position{
-		X: rand.Intn(MapWidth),
-		Y: rand.Intn(MapHeight),
-	}
-}
-
-// func moveCharacter() {
-// 	for i := range characters {
-// 		direction := getRandomDirection()
-// 		newX := characters[i].Position.X + direction.X
-// 		newY := characters[i].Position.Y + direction.Y
-
-// 		if isValidPosition(newX, newY) {
-// 			characters[i].Position.X = newX
-// 			characters[i].Position.Y = newY
-// 		}
-// 	}
-// }
-
-func moveCharacter(characterIndex int, direction string) {
-	currentCharacter := &characters[characterIndex]
-
-	switch strings.ToLower(direction) {
-	case "w":
-		moveCharacterTo(currentCharacter, currentCharacter.Position.X-1, currentCharacter.Position.Y)
-	case "a":
-		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y-1)
-	case "s":
-		moveCharacterTo(currentCharacter, currentCharacter.Position.X+1, currentCharacter.Position.Y)
-	case "d":
-		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y+1)
-	default:
-		fmt.Println("Movimento non valido.")
-	}
-}
-
-func moveCharacterTo(character *Character, x, y int) {
-	if isValidPosition(x, y) {
-		character.Position.X = x
-		character.Position.Y = y
-	}
-}
-
-func moveZombies() {
-	for i := range zombies {
-		// Controlla la situazione del singolo zombie
-		currentZombie := &zombies[i]
-
-		// Trova personaggio più vicino
-		closestCharacter := getClosestCharacter(currentZombie)
-
-		// Caso 1: Lo zombie si trova nella stessa zona di un personaggio, resta fermo
-		if closestCharacter != nil && isCharacterInSameZoneAsZombie(currentZombie, closestCharacter) {
-			continue
-		}
-
-		// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
-		if closestCharacter != nil && isCharacterAdjacentToZombie(currentZombie, closestCharacter) {
-			moveZombieTowardsCharacter(currentZombie, closestCharacter)
-		} else {
-			// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
-			direction := getRandomDirection()
-			newX := currentZombie.Position.X + direction.X
-			newY := currentZombie.Position.Y + direction.Y
-
-			if isValidPosition(newX, newY) {
-				currentZombie.Position.X = newX
-				currentZombie.Position.Y = newY
-			}
+		if isValidPosition(newX, newY) {
+			zombie.Position.X = newX
+			zombie.Position.Y = newY
 		}
 	}
 }
@@ -245,13 +193,66 @@ func getClosestCharacter(zombie *Zombie) *Character {
 	return closestChar
 }
 
-func getRandomDirection() Position {
-	directions := []Position{{0, 1}, {0, -1}, {1, 0}, {-1, 0}}
-	return directions[rand.Intn(len(directions))]
+func getRandomDirection() ZombiePosition {
+	directions := []ZombiePosition{
+		{Position: Position{X: 0, Y: 1}},
+		{Position: Position{X: 0, Y: -1}},
+		{Position: Position{X: 1, Y: 0}},
+		{Position: Position{X: -1, Y: 0}},
+	}
+
+	randomIndex := rand.Intn(len(directions))
+	return directions[randomIndex]
 }
 
 func isValidPosition(x, y int) bool {
 	return x >= 0 && x < MapWidth && y >= 0 && y < MapHeight && !mappa[x][y]
+}
+
+func createCharacter(name string, health int) Character {
+	position := getRandomPosition()
+	weapon := Weapon{
+		Name:   "Sword",
+		Damage: 20,
+		Range:  0,
+	}
+	return Character{Name: name, Health: health, Position: position, Weapon: weapon}
+}
+
+func createZombie(name string, health int) Zombie {
+	position := getRandomPosition()
+	return Zombie{Name: name, Health: health, Position: position}
+}
+
+func getRandomPosition() Position {
+	return Position{
+		X: rand.Intn(MapWidth),
+		Y: rand.Intn(MapHeight),
+	}
+}
+
+func moveCharacter(characterIndex int, direction string) {
+	currentCharacter := &characters[characterIndex]
+
+	switch strings.ToLower(direction) {
+	case "w":
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X-1, currentCharacter.Position.Y)
+	case "a":
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y-1)
+	case "s":
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X+1, currentCharacter.Position.Y)
+	case "d":
+		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y+1)
+	default:
+		fmt.Println("Movimento non valido.")
+	}
+}
+
+func moveCharacterTo(character *Character, x, y int) {
+	if isValidPosition(x, y) {
+		character.Position.X = x
+		character.Position.Y = y
+	}
 }
 
 func checkCollisions() {
@@ -299,12 +300,10 @@ func fight(characterIndex, zombieIndex int) {
 
 func removeZombie(index int) {
 	zombies = append(zombies[:index], zombies[index+1:]...)
-
 }
 
 func removeCharacter(index int) {
 	characters = append(characters[:index], characters[index+1:]...)
-
 }
 
 func isGameOver() bool {
