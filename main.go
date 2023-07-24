@@ -124,33 +124,71 @@ func main() {
 func moveZombieConcurrently(zombie *Zombie, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// Trova personaggio più vicino
-	closestCharacter := getClosestCharacter(zombie)
+	// Trova la zona in cui si trova lo zombie
+	zoneX := zombie.Position.X
+	zoneY := zombie.Position.Y
 
-	// Caso 1: Lo zombie si trova nella stessa zona di un personaggio, resta fermo
-	if closestCharacter != nil && isCharacterInSameZoneAsZombie(zombie, closestCharacter) {
+	// Trova la zona in cui si trova il personaggio (se presente)
+	var characterZoneX, characterZoneY int
+	if closestCharacter := getCharacterInZones(zoneX, zoneY); closestCharacter != nil {
+		characterZoneX = closestCharacter.Position.X
+		characterZoneY = closestCharacter.Position.Y
+	}
+
+	// Caso 1: Lo zombie si trova nella stessa zona del personaggio, resta fermo
+	if characterZoneX == zoneX && characterZoneY == zoneY {
 		return
-	} else if closestCharacter != nil && isCharacterAdjacentToZombie(zombie, closestCharacter) {
-		// Caso 2: Lo zombie si trova in una posizione adiacente al personaggio, si muove nella stessa zona del personaggio
-		newX := closestCharacter.Position.X
-		newY := closestCharacter.Position.Y
+	}
 
-		if isValidPosition(newX, newY) {
-			zombie.Position.X = newX
-			zombie.Position.Y = newY
-		}
-		return
-	} else {
-		// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
-		direction := getRandomDirection()
-		newX := zombie.Position.X + direction.X
-		newY := zombie.Position.Y + direction.Y
+	// Controlla le zone adiacenti allo zombie
+	adjacentZones := []struct{ X, Y int }{
+		{zoneX, zoneY},         // Zona attuale dello zombie
+		{zoneX + 1, zoneY},     // Zona a destra
+		{zoneX - 1, zoneY},     // Zona a sinistra
+		{zoneX, zoneY + 1},     // Zona sopra
+		{zoneX, zoneY - 1},     // Zona sotto
+		{zoneX + 1, zoneY + 1}, // Zona diagonale in alto a destra
+		{zoneX - 1, zoneY - 1}, // Zona diagonale in basso a sinistra
+		{zoneX + 1, zoneY - 1}, // Zona diagonale in basso a destra
+		{zoneX - 1, zoneY + 1}, // Zona diagonale in alto a sinistra
+	}
 
-		if isValidPosition(newX, newY) {
-			zombie.Position.X = newX
-			zombie.Position.Y = newY
+	for _, zone := range adjacentZones {
+		if closestCharacter := getCharacterInZones(zone.X, zone.Y); closestCharacter != nil {
+			// Muovi lo zombie nella zona del personaggio adiacente più vicina
+			newX := closestCharacter.Position.X
+			newY := closestCharacter.Position.Y
+
+			// Verifica se la nuova posizione è valida
+			if isValidPosition(newX, newY) {
+				zombie.Position.X = newX
+				zombie.Position.Y = newY
+				return
+			}
 		}
 	}
+
+	// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
+	direction := getRandomDirection()
+	newX := zombie.Position.X + direction.X
+	newY := zombie.Position.Y + direction.Y
+
+	if isValidPosition(newX, newY) {
+		zombie.Position.X = newX
+		zombie.Position.Y = newY
+	}
+}
+
+func getCharacterInZones(zoneX, zoneY int) *Character {
+	for _, character := range characters {
+		characterZoneX := character.Position.X
+		characterZoneY := character.Position.Y
+
+		if characterZoneX == zoneX && characterZoneY == zoneY {
+			return &character
+		}
+	}
+	return nil
 }
 
 func isCharacterInSameZoneAsZombie(zombie *Zombie, character *Character) bool {
@@ -166,16 +204,27 @@ func isCharacterAtPosition(x, y int) bool {
 	return false
 }
 
-func moveZombieTowardsCharacter(zombie *Zombie, character *Character) {
-	deltaX := character.Position.X - zombie.Position.X
-	deltaY := character.Position.Y - zombie.Position.Y
+func getDirectionTowardsCharacter(zombie *Zombie, character *Character) Position {
+	diffX := character.Position.X - zombie.Position.X
+	diffY := character.Position.Y - zombie.Position.Y
 
-	if deltaX != 0 {
-		zombie.Position.X += deltaX / int(math.Abs(float64(deltaX)))
+	// Calcola la direzione orizzontale
+	var dirX int
+	if diffX > 0 {
+		dirX = 1
+	} else if diffX < 0 {
+		dirX = -1
 	}
-	if deltaY != 0 {
-		zombie.Position.Y += deltaY / int(math.Abs(float64(deltaY)))
+
+	// Calcola la direzione verticale
+	var dirY int
+	if diffY > 0 {
+		dirY = 1
+	} else if diffY < 0 {
+		dirY = -1
 	}
+
+	return Position{X: dirX, Y: dirY}
 }
 
 func isCharacterAdjacentToZombie(zombie *Zombie, character *Character) bool {
