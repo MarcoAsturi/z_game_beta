@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/eiannone/keyboard"
 )
 
 const (
@@ -76,7 +77,7 @@ func main() {
 
 	// Creazione dei personaggi
 	characters = append(characters, createCharacter("s", "Sylas", 100))
-	characters = append(characters, createCharacter("e", "Elsa", 80))
+	// characters = append(characters, createCharacter("e", "Elsa", 80))
 
 	// Creazione degli zombie
 	zombies = append(zombies, createZombie("Walker", 60))
@@ -92,18 +93,7 @@ func main() {
 
 		// Movimento dei personaggi
 		for i := 0; i < len(characters); i++ {
-			currentCharacter := &characters[i]
-
-			// Stampiamo il messaggio per il personaggio corrente
-			fmt.Printf("%s, fai la tua mossa\n", currentCharacter.Name)
-
-			// Leggi l'input dell'utente per il movimento del personaggio
-			fmt.Print("Inserisci la direzione del movimento (WASD): ")
-			var direction string
-			fmt.Scan(&direction)
-
-			// Fai muovere il personaggio corrente
-			moveCharacter(i, direction)
+			moveCharacter(i)
 		}
 
 		// Movimento degli zombie in modo concorrente
@@ -286,17 +276,28 @@ func getRandomPosition() Position {
 	}
 }
 
-func moveCharacter(characterIndex int, direction string) {
+func moveCharacter(characterIndex int) {
+
 	currentCharacter := &characters[characterIndex]
 
-	switch strings.ToLower(direction) {
-	case "w":
+	// Leggi l'input dell'utente per il movimento del personaggio
+	fmt.Printf("%s, fai la tua mossa\n", currentCharacter.Name)
+	fmt.Println("Inserisci la direzione del movimento (WASD): ")
+
+	char, _, err := keyboard.GetSingleKey()
+	if err != nil {
+		panic(err)
+	}
+
+	// Altri controlli per rilevare la direzione
+	switch char {
+	case 'w':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X-1, currentCharacter.Position.Y)
-	case "a":
+	case 'a':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y-1)
-	case "s":
+	case 's':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X+1, currentCharacter.Position.Y)
-	case "d":
+	case 'd':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y+1)
 	default:
 		fmt.Println("Movimento non valido.")
