@@ -39,6 +39,7 @@ type Zombie struct {
 }
 
 type Character struct {
+	Id       string
 	Name     string
 	Health   int
 	Position Position
@@ -74,12 +75,12 @@ func main() {
 	mappa = createMap()
 
 	// Creazione dei personaggi
-	characters = append(characters, createCharacter("Sylas", 100))
-	// characters = append(characters, createCharacter("Elsa", 80))
+	characters = append(characters, createCharacter("s", "Sylas", 100))
+	characters = append(characters, createCharacter("e", "Elsa", 80))
 
 	// Creazione degli zombie
-	zombies = append(zombies, createZombie("Walker", 10))
-	zombies = append(zombies, createZombie("Runner", 15))
+	zombies = append(zombies, createZombie("Walker", 60))
+	zombies = append(zombies, createZombie("Runner", 65))
 
 	// WaitGroup per sincronizzare il completamento del movimento degli zombie
 	var wg sync.WaitGroup
@@ -263,14 +264,14 @@ func isValidPosition(x, y int) bool {
 	return x >= 0 && x < MapWidth && y >= 0 && y < MapHeight && !mappa[x][y]
 }
 
-func createCharacter(name string, health int) Character {
+func createCharacter(id string, name string, health int) Character {
 	position := getRandomPosition()
 	weapon := Weapon{
 		Name:   "Sword",
 		Damage: 20,
 		Range:  0,
 	}
-	return Character{Name: name, Health: health, Position: position, Weapon: weapon}
+	return Character{Id: id, Name: name, Health: health, Position: position, Weapon: weapon}
 }
 
 func createZombie(name string, health int) Zombie {
@@ -383,7 +384,8 @@ func printGameState() {
 				if hasCharacter && hasZombie {
 					fmt.Print("cz ")
 				} else if hasCharacter {
-					fmt.Print("c ")
+					character := getCharacterAtPosition(i, j)
+					fmt.Printf("%s ", character.Id)
 				} else if hasZombie {
 					fmt.Print("z ")
 				} else {
@@ -427,7 +429,8 @@ func printMap() {
 				if hasCharacter && hasZombie {
 					fmt.Print("cz ")
 				} else if hasCharacter {
-					fmt.Print("c ")
+					character := getCharacterAtPosition(i, j)
+					fmt.Printf("%s ", character.Id)
 				} else if hasZombie {
 					fmt.Print("z ")
 				} else {
@@ -455,4 +458,13 @@ func hasZombieAtPosition(x, y int) bool {
 		}
 	}
 	return false
+}
+
+func getCharacterAtPosition(x, y int) *Character {
+	for i := range characters {
+		if characters[i].Position.X == x && characters[i].Position.Y == y {
+			return &characters[i]
+		}
+	}
+	return nil
 }
