@@ -75,7 +75,7 @@ func main() {
 
 	// Creazione dei personaggi
 	characters = append(characters, createCharacter("Sylas", 100))
-	characters = append(characters, createCharacter("Elsa", 80))
+	// characters = append(characters, createCharacter("Elsa", 80))
 
 	// Creazione degli zombie
 	zombies = append(zombies, createZombie("Walker", 10))
