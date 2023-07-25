@@ -1,4 +1,4 @@
-module example/zombicide_beta
+module example/z_game_beta
 
 go 1.18
 
