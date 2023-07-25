@@ -77,7 +77,7 @@ func main() {
 
 	// Creazione dei personaggi
 	characters = append(characters, createCharacter("s", "Sylas", 100))
-	// characters = append(characters, createCharacter("e", "Elsa", 80))
+	characters = append(characters, createCharacter("e", "Elsa", 80))
 
 	// Creazione degli zombie
 	zombies = append(zombies, createZombie("Walker", 60))
@@ -284,13 +284,13 @@ func moveCharacter(characterIndex int) {
 	fmt.Printf("%s, fai la tua mossa\n", currentCharacter.Name)
 	fmt.Println("Inserisci la direzione del movimento (WASD): ")
 
-	char, _, err := keyboard.GetSingleKey()
+	charKey, _, err := keyboard.GetSingleKey()
 	if err != nil {
 		panic(err)
 	}
 
 	// Altri controlli per rilevare la direzione
-	switch char {
+	switch charKey {
 	case 'w':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X-1, currentCharacter.Position.Y)
 	case 'a':
@@ -299,6 +299,8 @@ func moveCharacter(characterIndex int) {
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X+1, currentCharacter.Position.Y)
 	case 'd':
 		moveCharacterTo(currentCharacter, currentCharacter.Position.X, currentCharacter.Position.Y+1)
+	case '\r':
+		fmt.Println("Personaggio fermo")
 	default:
 		fmt.Println("Movimento non valido.")
 	}
