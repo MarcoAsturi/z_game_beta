@@ -160,13 +160,16 @@ func moveZombieConcurrently(zombie *Zombie, wg *sync.WaitGroup) {
 	}
 
 	// Caso 3: In tutti gli altri casi, lo zombie esegue un movimento randomico
-	direction := getRandomDirection()
-	newX := zombie.Position.X + direction.X
-	newY := zombie.Position.Y + direction.Y
+	for {
+		direction := getRandomDirection()
+		newX := zombie.Position.X + direction.X
+		newY := zombie.Position.Y + direction.Y
 
-	if isValidPosition(newX, newY) {
-		zombie.Position.X = newX
-		zombie.Position.Y = newY
+		if isValidPosition(newX, newY) {
+			zombie.Position.X = newX
+			zombie.Position.Y = newY
+			break
+		}
 	}
 }
 
